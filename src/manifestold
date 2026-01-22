@@ -1,0 +1,15 @@
+{
+  "name": "Truth Checker (MVP)",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "description": "Extracts current page article text (MVP).",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Truth Checker"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
