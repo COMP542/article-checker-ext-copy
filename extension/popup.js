@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     previewEl.textContent = "";
 
     try {
-      // Get the active tab
+      // Get the active tabs
       const tabs = await browser.tabs.query({ active: true, currentWindow: true });
       const tab = tabs && tabs[0];
 
