@@ -44,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // send article to Flask backend
       const analysis = await postToBackend({ title, url, text });
       console.log("Analysis:", analysis);
+      
+      setStatus(`Extracted ${wordCount} words`);
 
       // Update UI with score
       setStatus(`Score: ${analysis.score}%`);
@@ -55,8 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
       previewEl.style.display = "block";
 
     } catch (err) {
-      setStatus("Error occurred", true);
-      console.error(err);
+      const msg = err?.message || String(err);
+      setStatus(`Error: ${msg}`, true);
+      console.error("Popup error:", err);
     }
   });
 
