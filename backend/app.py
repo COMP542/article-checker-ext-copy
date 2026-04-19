@@ -5,6 +5,7 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 from api.news_controller import fetch_related_articles
 from model.embed_text import embed_texts
@@ -12,10 +13,12 @@ from model.numpy_compute import compute_scores, bias_indicators
 
 import os
 
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
 
-NEWS_API_KEY = os.environ.get("NEWS_API_KEY", "your_api_key_here")
+NEWS_API_KEY = os.environ.get("NEWSAPI_KEY")
 
 
 @app.post("/analyze")
