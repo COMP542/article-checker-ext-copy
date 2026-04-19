@@ -1,2 +1,9 @@
 flask
 flask-cors
+sentence-transformers
+scikit-learn
+numpy
+requests
+textblob
+
+# pip install -r backend/requirements.txt
