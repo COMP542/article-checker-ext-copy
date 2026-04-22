@@ -1,12 +1,15 @@
-# Python virtual environments
-venv/
-.venv/
-
 # IDE
 .idea/
 
+# VS Code
+.vscode/
+.history
+
+# Python
+venv/
+.venv/
 __pycache__/
 *.pyc
 
 # ENV File
-backend/.env
+.env
