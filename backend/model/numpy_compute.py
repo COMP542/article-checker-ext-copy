@@ -1,6 +1,15 @@
-
-
 # backend/model/numpy_compute.py
+#
+# This file does two things:
+#   1. Scores the tone of the user's article (how opinionated vs factual it is)
+#   2. Computes how similar the user's article is to the cluster of
+#      related articles fetched from NewsAPI
+#
+# The math here is called "cosine similarity." It measures the angle
+# between two vectors — if two articles point in the same direction
+# in vector space, they're semantically similar. The closer the angle
+# is to 0 degrees, the more similar (score closer to 1.0).
+# We multiply by 100 to turn it into a percentage.
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -9,36 +18,53 @@ from textblob import TextBlob
 
 def bias_indicators(text: str) -> dict:
     """
-    Uses TextBlob to score the writing tone of an article.
+    Scores the writing tone of the article using TextBlob.
 
-    subjectivity: 0.0 = very objective/factual, 1.0 = very subjective/opinionated
-    polarity:    -1.0 = very negative tone,     1.0 = very positive tone
+    subjectivity: how opinionated vs factual the writing is
+        0.0 = purely factual (like a wire report)
+        1.0 = purely opinionated (like an editorial)
 
-    Wire reports (Reuters, AP) typically score below 0.2 subjectivity.
-    Heavily editorialized articles often score 0.5+.
+    polarity: the emotional charge of the writing
+        -1.0 = very negative tone
+         0.0 = neutral
+         1.0 = very positive tone
+
+    TextBlob works by looking at individual words and their known
+    sentiment scores, then averaging across the whole text.
+    We cap at 3000 characters to keep it fast.
     """
-    blob = TextBlob(text[:3000])  # cap length for speed
+    blob = TextBlob(text[:3000])
     return {
         "subjectivity": round(blob.sentiment.subjectivity, 3),
-        "polarity": round(blob.sentiment.polarity, 3),
+        "polarity":     round(blob.sentiment.polarity, 3),
     }
 
 
 def flag_outliers(results: list) -> list:
     """
-    Marks articles whose similarity score is more than 1.5 standard
-    deviations below the cluster mean as outliers.
-    An outlier + high subjectivity is a strong signal of spin or bias.
+    Marks related articles that are statistically far from the rest
+    of the cluster as outliers.
+
+    How it works:
+        - We calculate the average similarity score across all related articles
+        - We calculate the standard deviation (how spread out the scores are)
+        - Any article more than 1.5 standard deviations below the average
+          gets flagged as an outlier
+
+    An outlier article is one that covers the same topic but frames it
+    very differently from everyone else — which combined with high
+    subjectivity can signal spin or bias.
+
+    We need at least 3 articles to meaningfully define an outlier.
     """
     if len(results) < 3:
-        # not enough articles to meaningfully define an outlier
         for r in results:
             r["outlier"] = False
         return results
 
-    scores = np.array([r["similarity"] for r in results])
-    mean = float(np.mean(scores))
-    std = float(np.std(scores))
+    scores    = np.array([r["similarity"] for r in results])
+    mean      = float(np.mean(scores))
+    std       = float(np.std(scores))
     threshold = mean - (1.5 * std)
 
     for r in results:
@@ -49,17 +75,24 @@ def flag_outliers(results: list) -> list:
 
 def compute_scores(user_embedding, related_embeddings, related_articles: list) -> dict:
     """
-    user_embedding:     1D numpy array for the user's article
-    related_embeddings: 2D numpy array, one row per related article
-    related_articles:   list of dicts from fetch_related_articles()
+    Takes the vectors for the user's article and all related articles,
+    and computes:
+        - An overall consistency score (user article vs. the cluster average)
+        - Individual similarity scores (user article vs. each related article)
 
-    Returns the overall consistency score and a ranked list of
-    related articles with individual similarity scores.
+    Parameters:
+        user_embedding:     1D numpy array — the vector for the user's article
+        related_embeddings: 2D numpy array — one row per related article
+        related_articles:   list of dicts from fetch_related_articles()
+
+    Returns a dict with the consistency score and a ranked list of articles.
     """
-    # Cluster center = mean vector of all related articles
+
+    # The "cluster center" is just the average of all related article vectors.
+    # It represents what the "typical" reporting on this topic looks like.
     cluster_center = np.mean(related_embeddings, axis=0, keepdims=True)
 
-    # How similar is the user's article to the overall cluster?
+    # How similar is the user's article to that average? → consistency score
     consistency = float(
         cosine_similarity([user_embedding], cluster_center)[0][0]
     )
@@ -67,7 +100,7 @@ def compute_scores(user_embedding, related_embeddings, related_articles: list) -
     # How similar is the user's article to each individual related article?
     individual_scores = cosine_similarity([user_embedding], related_embeddings)[0]
 
-    # Build result list
+    # Build the result list — one entry per related article
     results = []
     for i, article in enumerate(related_articles):
         results.append({
@@ -79,10 +112,10 @@ def compute_scores(user_embedding, related_embeddings, related_articles: list) -
             "similarity":  round(float(individual_scores[i]) * 100, 1),
         })
 
-    # Sort highest similarity first
+    # Sort so the most similar article appears first
     results.sort(key=lambda x: x["similarity"], reverse=True)
 
-    # Flag outliers based on similarity distance
+    # Flag any articles that are statistical outliers
     results = flag_outliers(results)
 
     return {

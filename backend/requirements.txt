@@ -1,10 +1,20 @@
-flask
-flask-cors
-sentence-transformers
-scikit-learn
-numpy
-requests
-textblob
-python-dotenv
+# backend/requirements.txt
+# Install everything with:
+#   pip install -r requirements.txt
+#
+# After installing, also run this once to download the spaCy language model:
+#   python -m spacy download en_core_web_sm
 
-# pip install -r backend/requirements.txt
+flask          # the web server framework
+flask-cors     # allows the browser extension to make requests to Flask
+python-dotenv  # reads the .env file so we don't hardcode the API key
+
+requests       # makes HTTP requests to NewsAPI
+
+sentence-transformers  # loads the AI embedding model (all-MiniLM-L6-v2)
+                       # converts article text into vectors for comparison
+scikit-learn           # provides cosine_similarity for scoring
+numpy                  # math on vectors and arrays
+
+textblob       # tone analysis — scores subjectivity and polarity of writing
+spacy          # grammar parser — used to detect passive voice constructions
