@@ -1,3 +1,4 @@
+
 # backend/api/news_controller.py
 #
 # This file handles fetching related articles from NewsAPI.
@@ -37,7 +38,7 @@ OWNERSHIP_LABELS = {
     "Business Insider": "corporate",       # Axel Springer
     "Politico": "corporate",               # Axel Springer
 
-    # State-funded — funded by a government, fully or partially.
+    # State-funded - funded by a government, fully or partially.
     # Not inherently biased, but worth knowing.
     "BBC News": "state",
     "NPR": "state",
@@ -46,13 +47,13 @@ OWNERSHIP_LABELS = {
     "RT": "state",
     "Voice of America": "state",
 
-    # Tabloid — sensationalism and engagement-driven headlines first.
+    # Tabloid - sensationalism and engagement-driven headlines first.
     "Daily Mail": "tabloid",
     "The Sun": "tabloid",
     "New York Daily News": "tabloid",
     "TMZ": "tabloid",
 
-    # Independent — not owned by a major conglomerate or government.
+    # Independent - not owned by a major conglomerate or government.
     "The Guardian": "independent",
     "The Intercept": "independent",
     "ProPublica": "independent",

@@ -54,16 +54,16 @@ def analyze():
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    # --- Step 1: Tone analysis ---
+    # --- Step 1 Tone analysis ---
     # Scores how opinionated vs factual the writing is, and its emotional charge
     tone = bias_indicators(text)
 
-    # --- Step 2: Framing analysis ---
+    # --- Step 2 Framing analysis ---
     # Detects language patterns like selective doubt, passive voice,
     # and precision asymmetry that can indicate one-sided framing
     framing = analyze_framing(text)
 
-    # --- Step 3: Fetch related articles ---
+    # --- Step 3 Fetch related articles ---
     # Use the article title as the search query (fall back to first 120 chars of text)
     query = title if title else text[:120]
     related_articles = fetch_related_articles(query, NEWS_API_KEY, num=10)
@@ -71,7 +71,7 @@ def analyze():
     if not related_articles:
         return jsonify({"error": "No related articles found. Check your NewsAPI key."}), 502
 
-    # --- Step 4: Embed everything as vectors ---
+    # --- Step 4 Embed everything as vectors ---
     # Combine the user's article with all related articles into one list,
     # then encode them all at once (faster than encoding separately)
     related_texts = [
@@ -85,7 +85,7 @@ def analyze():
     user_embedding     = all_embeddings[0]   # first row = user's article
     related_embeddings = all_embeddings[1:]  # remaining rows = related articles
 
-    # --- Step 5: Score consistency and rank related articles ---
+    # --- Step 5 Score consistency and rank related articles ---
     scores = compute_scores(user_embedding, related_embeddings, related_articles)
 
     # Send the full result back to the extension

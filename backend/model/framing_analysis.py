@@ -1,7 +1,8 @@
+
 # backend/model/framing_analysis.py
 #
 # This file detects subtle language patterns in an article that can
-# indicate biased or asymmetric framing — without ever saying anything
+# indicate biased or asymmetric framing - without ever saying anything
 # explicitly false. These are real journalistic techniques used to make
 # one side of a story seem more credible than another.
 #
@@ -15,13 +16,13 @@ import re
 import spacy
 
 # spaCy is a natural language processing library that can parse
-# sentence structure — it understands grammar, not just word counts.
+# sentence structure - it understands grammar, not just word counts.
 # Run this once in your terminal before using this file:
 #   python -m spacy download en_core_web_sm
 nlp = spacy.load("en_core_web_sm")
 
 
-# --- Word lists ---
+#
 
 # These words cast DOUBT on a statement.
 # Example: "Iran claims the strike killed 10 people"
@@ -32,8 +33,8 @@ DOUBT_VERBS = {
 }
 
 # These words assert something is FACTUALLY SETTLED.
-# Example: "Israel confirmed the strike killed 10 people"
-# Using "confirmed" implies it's an established fact.
+# Example: "Israel confirmed the strike killed 10 people" vs "Iran claims 30 people dead"
+# Using "confirmed" implies it's an established fact, while claims devalues or downplays the opposition.
 CERTAINTY_VERBS = {
     "confirmed", "revealed", "showed", "proved", "found",
     "demonstrated", "established", "verified", "acknowledged", "admitted"
