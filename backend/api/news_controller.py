@@ -11,6 +11,8 @@
 # is a structural fact — it describes who controls the outlet and
 # what their incentives might be, without implying a political team.
 
+from urllib import response
+
 import requests
 
 # A lookup table mapping news source names to their ownership type.
@@ -85,6 +87,11 @@ def fetch_related_articles(query: str, api_key: str, num: int = 10) -> list:
     }
 
     response = requests.get(url, params=params)
+
+    if response.status_code != 200:
+        print(f"NewsAPI error: {response.status_code} - {response.text}")
+        return []
+
     articles = response.json().get("articles", [])
 
     return [

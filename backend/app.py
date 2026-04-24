@@ -69,7 +69,7 @@ def analyze():
     related_articles = fetch_related_articles(query, NEWS_API_KEY, num=10)
 
     if not related_articles:
-        return jsonify({"error": "No related articles found. Check your NewsAPI key."}), 502
+        return jsonify({"error": "No related articles found."})
 
     # --- Step 4 Embed everything as vectors ---
     # Combine the user's article with all related articles into one list,
