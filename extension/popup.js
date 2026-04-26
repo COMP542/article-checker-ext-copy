@@ -85,8 +85,8 @@ extractBtn.addEventListener("click", async () => {
 
     previewAnalysis.textContent = JSON.stringify(analysis, null, 2);
 
-    infoEl.textContent = `Score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? wordCount}`;
-    setStatus("Analysis complete");
+    infoEl.textContent = `Consistency score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? wordCount}\nLabel: ${analysis.label}`;
+    setStatus("Analysis complete. Label and percentage score does not determine validity, or how true information is.");
 
     showTab("analysis");
   } catch (err) {
