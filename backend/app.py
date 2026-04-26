@@ -36,6 +36,7 @@ CORS(app)  # allows the browser extension to talk to this server
 
 # Read the NewsAPI key from the .env file
 NEWS_API_KEY = os.environ.get("NEWSAPI_KEY")
+PORT = int(os.environ.get("PORT", 5000) or 5000)
 
 MIN_TEXT_WORDS = 30
 MAX_TEXT_CHARS = 50000
@@ -271,4 +272,4 @@ def analyze():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=PORT, debug=True)
