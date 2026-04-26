@@ -75,6 +75,13 @@ def fetch_related_articles(query: str, api_key: str, num: int = 10) -> list:
     Returns a list of dicts, each containing:
         title, description, url, source name, ownership label, publishedAt
     """
+    print(f"[DEBUG] fetch_related_articles called with query: '{query}', api_key exists: {bool(api_key)}")
+    
+    # Validate query
+    if not query or not query.strip():
+        print("[DEBUG] Empty query provided")
+        return []
+    
     url = "https://newsapi.org/v2/everything"
     params = {
         "q":        query,
@@ -84,15 +91,28 @@ def fetch_related_articles(query: str, api_key: str, num: int = 10) -> list:
         "apiKey":   api_key,
     }
 
-    response = requests.get(url, params=params)
-
-    if response.status_code != 200:
-        print(f"NewsAPI error: {response.status_code} - {response.text}")
+    print(f"[DEBUG] Making NewsAPI request with params: {params}")
+    
+    try:
+        response = requests.get(url, params=params)
+        print(f"[DEBUG] NewsAPI response status: {response.status_code}")
+    except Exception as e:
+        print(f"[DEBUG] Exception making NewsAPI request: {e}")
         return []
 
-    articles = response.json().get("articles", [])
+    if response.status_code != 200:
+        print(f"[DEBUG] NewsAPI error: {response.status_code} - {response.text}")
+        return []
 
-    return [
+    try:
+        data = response.json()
+        articles = data.get("articles", [])
+        print(f"[DEBUG] NewsAPI returned {len(articles)} articles")
+    except Exception as e:
+        print(f"[DEBUG] Exception parsing NewsAPI response: {e}")
+        return []
+
+    result = [
         {
             "title":       article.get("title"),
             "description": article.get("description") or "",
@@ -104,3 +124,6 @@ def fetch_related_articles(query: str, api_key: str, num: int = 10) -> list:
         for article in articles
         if article.get("title")  # skip any results with no title
     ]
+    
+    print(f"[DEBUG] Returning {len(result)} processed articles")
+    return result
