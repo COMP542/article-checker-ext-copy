@@ -36,6 +36,124 @@ CORS(app)  # allows the browser extension to talk to this server
 # Read the NewsAPI key from the .env file
 NEWS_API_KEY = os.environ.get("NEWSAPI_KEY")
 
+MIN_TEXT_WORDS = 30
+MAX_TEXT_CHARS = 50000
+MAX_TITLE_CHARS = 300
+MAX_URL_CHARS = 2048
+
+
+def error_response(status: int, code: str, message: str, details: dict | None = None):
+    payload = {
+        "ok": False,
+        "error": {
+            "code": code,
+            "message": message,
+        },
+    }
+    if details:
+        payload["error"]["details"] = details
+    return jsonify(payload), status
+
+
+def validate_analyze_payload(data):
+    
+    # Check that the request body is not empty
+    if data is None:
+        return None, error_response(
+            400,
+            "INVALID_JSON",
+            "Expected a JSON request body.",
+        )
+		
+	# Check that the JSON body is an object
+    if not isinstance(data, dict):
+        return None, error_response(
+            400,
+            "INVALID_PAYLOAD",
+            "JSON body must be an object.",
+        )
+
+
+
+	# Extract and validate the title, url, and text fields
+    title_raw = data.get("title", "")
+    url_raw = data.get("url", "")
+    text_raw = data.get("text", "")
+
+    if title_raw is None:
+        title_raw = ""
+    if url_raw is None:
+        url_raw = ""
+
+    if not isinstance(title_raw, str) or not isinstance(url_raw, str) or not isinstance(text_raw, str):
+        return None, error_response(
+            400,
+            "INVALID_FIELD_TYPE",
+            "Fields title, url, and text must be strings.",
+        )
+
+
+
+	# Trim whitespace and validate lengths
+    title = title_raw.strip()
+    url = url_raw.strip()
+    text = text_raw.strip()
+
+    if not text:
+        return None, error_response(400, "MISSING_TEXT", "No text provided.")
+
+    if len(text) > MAX_TEXT_CHARS:
+        return None, error_response(
+            400,
+            "TEXT_TOO_LONG",
+            "Article text is too long.",
+            details={"maxChars": MAX_TEXT_CHARS, "receivedChars": len(text)},
+        )
+
+    word_count = len(text.split())
+    if word_count < MIN_TEXT_WORDS:
+        return None, error_response(
+            400,
+            "TEXT_TOO_SHORT",
+            "Article text is too short for credible analysis.",
+            details={"minWords": MIN_TEXT_WORDS, "receivedWords": word_count},
+        )
+
+    if len(title) > MAX_TITLE_CHARS:
+        return None, error_response(
+            400,
+            "TITLE_TOO_LONG",
+            "Title is too long.",
+            details={"maxChars": MAX_TITLE_CHARS, "receivedChars": len(title)},
+        )
+
+    if len(url) > MAX_URL_CHARS:
+        return None, error_response(
+            400,
+            "URL_TOO_LONG",
+            "URL is too long.",
+            details={"maxChars": MAX_URL_CHARS, "receivedChars": len(url)},
+        )
+
+
+
+	# Basic URL format check
+    if url and not (url.startswith("http://") or url.startswith("https://")):
+        return None, error_response(
+            400,
+            "INVALID_URL",
+            "URL must start with http:// or https://",
+        )
+
+
+	# If we made it this far, the input is valid. Return the cleaned data.
+    return {
+        "title": title,
+        "url": url,
+        "text": text,
+        "word_count": word_count,
+    }, None
+
 
 @app.post("/analyze")
 def analyze():
@@ -45,14 +163,22 @@ def analyze():
 
     Returns JSON with the full analysis result.
     """
-    data  = request.get_json(silent=True) or {}
-    title = (data.get("title") or "").strip()
-    url   = (data.get("url")   or "").strip()
-    text  = (data.get("text")  or "").strip()
+    payload = request.get_json(silent=True)
+    validated, validation_error = validate_analyze_payload(payload)
+    if validation_error:
+        return validation_error
 
-    # Can't do anything without article text
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
+    title = validated["title"]
+    url = validated["url"]
+    text = validated["text"]
+    word_count = validated["word_count"]
+
+    if not NEWS_API_KEY:
+        return error_response(
+            503,
+            "MISSING_CONFIG",
+            "Server is not configured with NEWSAPI_KEY.",
+        )
 
     # --- Step 1 Tone analysis ---
     # Scores how opinionated vs factual the writing is, and its emotional charge
