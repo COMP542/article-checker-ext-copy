@@ -264,7 +264,7 @@ def analyze():
         "input": {
             "title":     title,
             "url":       url,
-            "wordCount": len(text.split()),
+            "wordCount": word_count,
         },
         "score":   scores["consistency_score"],  # 0-100, how consistent with the cluster
         "label": scores["label"],                 # written explanation
