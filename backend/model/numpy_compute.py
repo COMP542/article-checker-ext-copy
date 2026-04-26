@@ -72,6 +72,20 @@ def flag_outliers(results: list) -> list:
 
     return results
 
+def consistency_label(score: float) -> str:
+    """
+    Takes the reported score and returns written explanation of percentage given to user.
+    """
+
+    if score >= 80:
+        return "Highly consistent"
+    elif score >= 50:
+        return "Moderately consistent"
+    elif score >= 20:
+        return "Low consistency"
+    else:
+        return "Outlier: Significantly differs from other reporting"
+
 
 def compute_scores(user_embedding, related_embeddings, related_articles: list) -> dict:
     """
@@ -117,8 +131,11 @@ def compute_scores(user_embedding, related_embeddings, related_articles: list) -
 
     # Flag any articles that are statistical outliers
     results = flag_outliers(results)
+    consistency_answer = round(consistency * 100, 1)
+    label = consistency_label(consistency_answer)
 
     return {
-        "consistency_score": round(consistency * 100, 1),
+        "consistency_score": consistency_answer,
         "related": results,
+        "label": label,
     }

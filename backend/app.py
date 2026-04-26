@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 
 from api.news_controller import fetch_related_articles
 from model.embed_text import embed_texts
-from model.numpy_compute import compute_scores, bias_indicators
+from model.numpy_compute import compute_scores, bias_indicators, consistency_label
 from model.framing_analysis import analyze_framing
 
 import os
@@ -97,6 +97,7 @@ def analyze():
             "wordCount": len(text.split()),
         },
         "score":   scores["consistency_score"],  # 0-100, how consistent with the cluster
+        "label": scores["label"],                 # written explanation
         "tone":    tone,                          # subjectivity + polarity
         "framing": framing,                       # language pattern flags
         "related": scores["related"],             # ranked list of related articles

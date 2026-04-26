@@ -5,4 +5,8 @@ bash run.sh
 # Test Curl
 curl -X POST http://127.0.0.1:5000/analyze \
   -H "Content-Type: application/json" \
-  -d '{"title": "Climate change threatens coastal cities as sea levels rise", "text": "Scientists warn that rising sea levels caused by climate change pose an existential threat to coastal cities worldwide. New research shows that without immediate action to reduce carbon emissions, millions of people could be displaced by 2050."}'
+  -d '{
+    "title": "Israeli airstrike kills civilians in Gaza hospital",
+    "text": "An Israeli airstrike struck a hospital in Gaza on Tuesday, killing an unconfirmed number of civilians according to Hamas health officials. Israel confirmed the strike targeted a militant command center operating beneath the facility. Palestinian authorities claim at least 50 people were killed, while Israeli military sources say the number is unverified. Several witnesses reportedly saw missiles hit the building, though the exact death toll remains unknown. The strike has been condemned by multiple governments."
+  }'
+

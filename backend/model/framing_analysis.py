@@ -60,14 +60,22 @@ def detect_hedging(text: str) -> dict:
     """
     words = re.findall(r"\b\w+\b", text.lower())
 
-    doubt_count = sum(1 for w in words if w in DOUBT_VERBS)
-    certainty_count = sum(1 for w in words if w in CERTAINTY_VERBS)
+    doubt_found = [w for w in words if w in DOUBT_VERBS]
+    certainty_found = [w for w in words if w in CERTAINTY_VERBS]
+
+    doubt_count = len(doubt_found)
+    certainty_count = len(certainty_found)
+
 
     return {
         "doubt_language_count": doubt_count,
         "certainty_language_count": certainty_count,
         # Flag if there's a lot of doubt language and zero certainty language
-        "flag": doubt_count > 3 and certainty_count == 0
+        "flag": doubt_count > 3 and certainty_count == 0,
+        "flagged_words": {
+            "doubt": list(set(doubt_found)),
+            "certainty": list(set(certainty_found)),
+        }
     }
 
 
@@ -110,17 +118,22 @@ def detect_precision_asymmetry(text: str) -> dict:
     When one side gets exact numbers and the other gets vague language,
     it creates an implicit imbalance — one side feels more real and documented.
     """
-    vague_matches = re.findall(VAGUE, text.lower())
-    precise_matches = re.findall(PRECISE, text.lower())
 
-    vague_count = len(vague_matches)
-    precise_count = len(precise_matches)
+    vague_found = re.findall(VAGUE, text.lower())
+    precise_found = [" ".join(match) for match in re.findall(PRECISE, text.lower())]
+
+    vague_count = len(vague_found)
+    precise_count = len(precise_found)
 
     return {
         "vague_quantity_count": vague_count,
         "precise_quantity_count": precise_count,
         # Flag if both vague AND precise language appear in the same article
-        "flag": vague_count > 0 and precise_count > 0
+        "flag": vague_count > 0 and precise_count > 0,
+        "flagged_words": {
+            "doubt": list(set(vague_found)),
+            "certainty": list(set(precise_found)),
+        }
     }
 
 

@@ -11,8 +11,6 @@
 # is a structural fact — it describes who controls the outlet and
 # what their incentives might be, without implying a political team.
 
-from urllib import response
-
 import requests
 
 # A lookup table mapping news source names to their ownership type.
