@@ -79,7 +79,8 @@ browser.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "EXTRACT_ARTICLE") {
     const title = document.title || "";
     const url = location.href;
-    const text = document.body?.innerText || "";
+    // const text = document.body?.innerText || ""; for the article text
+    const text = getMainText();
     const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
     return Promise.resolve({
@@ -88,6 +89,5 @@ browser.runtime.onMessage.addListener((msg) => {
     });
   }
 
-  // optional: explicitly ignore other messages
   return undefined;
 });

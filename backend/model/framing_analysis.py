@@ -28,8 +28,16 @@ nlp = spacy.load("en_core_web_sm")
 # Example: "Iran claims the strike killed 10 people"
 # Using "claims" implies we're not sure if it's true.
 DOUBT_VERBS = {
-    "claims", "alleges", "insists", "reportedly", "supposedly",
-    "purportedly", "asserts", "contends", "maintains", "suggests"
+    # with and without 's' to catch both "claims" and "claim"
+    "claim", "claims",
+    "allege", "alleges",
+    "insist", "insists",
+    "reportedly", "supposedly", "purportedly",
+    "assert", "asserts",
+    "contend", "contends",
+    "maintain", "maintains",
+    "suggest", "suggests",
+    "according"
 }
 
 # These words assert something is FACTUALLY SETTLED.
@@ -71,7 +79,8 @@ def detect_hedging(text: str) -> dict:
         "doubt_language_count": doubt_count,
         "certainty_language_count": certainty_count,
         # Flag if there's a lot of doubt language and zero certainty language
-        "flag": doubt_count > 3 and certainty_count == 0,
+        # "flag": doubt_count > 3 and certainty_count == 0, // old flag threshold
+        "flag": doubt_count > certainty_count and doubt_count > 0,
         "flagged_words": {
             "doubt": list(set(doubt_found)),
             "certainty": list(set(certainty_found)),

@@ -25,6 +25,7 @@ from model.numpy_compute import compute_scores, bias_indicators, consistency_lab
 from model.framing_analysis import analyze_framing
 
 import os
+import re
 
 # Load environment variables from the .env file in this folder.
 # This is how we read NEWSAPI_KEY without hardcoding it in the source code.
@@ -154,6 +155,35 @@ def validate_analyze_payload(data):
         "word_count": word_count,
     }, None
 
+import re
+
+def build_search_queries(title: str, text: str) -> list[str]:
+    queries = []
+
+    if title:
+        base = re.split(r"\s+[|\-]\s+", title)[0].strip()
+        base = base.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
+        clean = re.sub(r"[^A-Za-z0-9\s]", " ", base)
+        clean = re.sub(r"\s+", " ", clean).strip()
+
+        words = clean.split()
+        if words:
+            queries.append(" ".join(words[:10]))
+        if len(words) >= 6:
+            queries.append(" ".join(words[:6]))
+
+    if text:
+        queries.append(" ".join(text.split()[:12]))
+
+    # remove duplicates while preserving order
+    seen = set()
+    out = []
+    for q in queries:
+        if q and q not in seen:
+            seen.add(q)
+            out.append(q)
+    return out
+
 
 @app.post("/analyze")
 def analyze():
@@ -207,9 +237,13 @@ def analyze():
 
     # --- Step 3 Fetch related articles ---
     # Use the article title as the search query (fall back to first 120 chars of text)
-    query = title if title else text[:120]
+    # query = title if title else text[:120]
+    related_articles = []
     try:
-        related_articles = fetch_related_articles(query, NEWS_API_KEY, num=10)
+        for query in build_search_queries(title, text):
+            related_articles = fetch_related_articles(query, NEWS_API_KEY, num=10)
+            if related_articles:
+                break
     except Exception:
         app.logger.exception("Related article fetch failed")
         return error_response(
