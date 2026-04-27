@@ -155,7 +155,6 @@ def validate_analyze_payload(data):
         "word_count": word_count,
     }, None
 
-import re
 
 def build_search_queries(title: str, text: str) -> list[str]:
     queries = []
