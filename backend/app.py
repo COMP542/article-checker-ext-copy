@@ -211,30 +211,52 @@ def analyze():
 
     # --- Step 1 Tone analysis ---
     # Scores how opinionated vs factual the writing is, and its emotional charge
-    tone = bias_indicators(text)
+    try:
+        tone = bias_indicators(text)
+    except Exception:
+        app.logger.exception("Tone analysis failed")
+        return error_response(
+            500,
+            "TONE_ANALYSIS_FAILED",
+            "Failed to analyze article tone.",
+        )
 
     # --- Step 2 Framing analysis ---
     # Detects language patterns like selective doubt, passive voice,
     # and precision asymmetry that can indicate one-sided framing
-    framing = analyze_framing(text)
+    try:
+        framing = analyze_framing(text)
+    except Exception:
+        app.logger.exception("Framing analysis failed")
+        return error_response(
+            500,
+            "FRAMING_ANALYSIS_FAILED",
+            "Failed to analyze article framing.",
+        )
 
     # --- Step 3 Fetch related articles ---
     # Use the article title as the search query (fall back to first 120 chars of text)
     # query = title if title else text[:120]
     related_articles = []
-    for query in build_search_queries(title, text):
-        related_articles = fetch_related_articles(query, NEWS_API_KEY, num=10)
-        if related_articles:
-            break
+    try:
+        for query in build_search_queries(title, text):
+            related_articles = fetch_related_articles(query, NEWS_API_KEY, num=10)
+            if related_articles:
+                break
+    except Exception:
+        app.logger.exception("Related article fetch failed")
+        return error_response(
+            502,
+            "RELATED_FETCH_FAILED",
+            "Failed to fetch related reporting.",
+        )
 
     if not related_articles:
-        return jsonify({
-            "ok": False,
-            "error": {
-                "code": "NO_RELATED_ARTICLES",
-                "message": "No related articles found."
-            }
-        }), 404
+        return error_response(
+            502,
+            "NO_RELATED_ARTICLES",
+            "No related articles were found from upstream providers.",
+        )
 
     # --- Step 4 Embed everything as vectors ---
     # Combine the user's article with all related articles into one list,
@@ -245,13 +267,29 @@ def analyze():
     ]
 
     all_texts      = [text[:2000]] + related_texts  # cap user text for speed
-    all_embeddings = embed_texts(all_texts)
+    try:
+        all_embeddings = embed_texts(all_texts)
+    except Exception:
+        app.logger.exception("Embedding stage failed")
+        return error_response(
+            503,
+            "EMBEDDING_UNAVAILABLE",
+            "Text embedding service is unavailable.",
+        )
 
     user_embedding     = all_embeddings[0]   # first row = user's article
     related_embeddings = all_embeddings[1:]  # remaining rows = related articles
 
     # --- Step 5 Score consistency and rank related articles ---
-    scores = compute_scores(user_embedding, related_embeddings, related_articles)
+    try:
+        scores = compute_scores(user_embedding, related_embeddings, related_articles)
+    except Exception:
+        app.logger.exception("Scoring stage failed")
+        return error_response(
+            500,
+            "SCORING_FAILED",
+            "Failed to compute credibility scoring.",
+        )
 
     # Send the full result back to the extension
     return jsonify({
@@ -259,7 +297,7 @@ def analyze():
         "input": {
             "title":     title,
             "url":       url,
-            "wordCount": len(text.split()),
+            "wordCount": word_count,
         },
         "score":   scores["consistency_score"],  # 0-100, how consistent with the cluster
         "label": scores["label"],                 # written explanation
