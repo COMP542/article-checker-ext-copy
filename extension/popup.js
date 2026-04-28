@@ -58,6 +58,9 @@ async function postToBackend(payload) {
 
   for (const url of urls) {
     try {
+
+      console.log(`Trying backend: ${url}`);
+
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,10 +73,12 @@ async function postToBackend(payload) {
         throw new Error(json?.error?.message || `HTTP ${res.status}`);
       }
 
+      console.log(`Success with backend: ${url}`, json);
       return json;
 
     } catch (err) {
       lastError = err;
+      console.error(`Error with backend ${url}:`, err);
       continue;
     }
   }
