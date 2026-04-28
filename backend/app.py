@@ -162,20 +162,17 @@ def build_search_queries(title: str, text: str) -> list[str]:
 
     if title:
         base = re.split(r"\s+[|\-]\s+", title)[0].strip()
-        base = base.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
-        clean = re.sub(r"[^A-Za-z0-9\s]", " ", base)
-        clean = re.sub(r"\s+", " ", clean).strip()
+        base = re.sub(r"[^A-Za-z0-9\s]", " ", base)
+        base = re.sub(r"\s+", " ", base).strip()
+        words = base.split()
 
-        words = clean.split()
         if words:
             queries.append(" ".join(words[:10]))
         if len(words) >= 6:
             queries.append(" ".join(words[:6]))
+        if len(words) >= 3:
+            queries.append(" ".join(words[:3]))  # ← add this
 
-    if text:
-        queries.append(" ".join(text.split()[:12]))
-
-    # remove duplicates while preserving order
     seen = set()
     out = []
     for q in queries:
