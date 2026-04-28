@@ -1,5 +1,3 @@
-
-
 function normalizeText(s) {
     return (s||"")
         .replace(/\s+/g, " ")
@@ -32,6 +30,37 @@ function cloneAndStrip(root) {
     return clone;
 }
 
+function getMainTitle() {
+    const cleaned = cloneAndStrip(document.documentElement);
+    
+    // Look for article headline in common locations
+    const headlineSelectors = [
+        "h1",                    // Often the main headline
+        "article h1",           // Article-specific headline
+        "[class*='headline']",  // Classes named headline
+        "[class*='title']",     // Classes named title
+        "main h1",              // Main section headline
+    ];
+    
+    for(const sel of headlineSelectors) {
+        const el = cleaned.querySelector(sel);
+        if(el) {
+            const text = normalizeText(el.innerText);
+            if(text && text.length > 0 && text.length < 500) {
+                return text;
+            }
+        }
+    }
+    
+    // Fallback: use document.title but try to clean it
+    // Remove common suffixes like " | Site Name", " - Site Name", etc.
+    const docTitle = document.title || "";
+    const cleaned_title = normalizeText(docTitle)
+        .split(/\s*[|\-–—]\s*/)[0]  // Take the part before common separators
+        .trim();
+    
+    return cleaned_title;
+}
 
 function getMainText() {
     const body = document.body;
@@ -77,12 +106,12 @@ console.log("[TruthChecker] content script ready", location.href);
 
 browser.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "EXTRACT_ARTICLE") {
-    const title = document.title || "";
+    const title = getMainTitle();  // Use the new function instead of document.title
     const url = location.href;
     // const text = document.body?.innerText || ""; for the article text
     const text = getMainText();
     const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-
+    console.log(title)
     return Promise.resolve({
       ok: true,
       data: { title, url, text, wordCount }
