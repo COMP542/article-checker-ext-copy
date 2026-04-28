@@ -49,7 +49,7 @@ async function extractFromPage(tabId) {
 }
 
 async function postToBackend(payload) {
-  const res = await fetch("http://127.0.0.1:5000/analyze", {
+  const res = await fetch("http://104.248.67.141:5000/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -86,7 +86,7 @@ extractBtn.addEventListener("click", async () => {
     previewAnalysis.textContent = JSON.stringify(analysis, null, 2);
 
     infoEl.textContent = `Consistency score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? wordCount}\nLabel: ${analysis.label}`;
-    setStatus("Analysis complete. Label and percentage score does not determine validity, or how true information is.");
+    setStatus("Analysis complete. Label and percentage score is not for determining validity, or how true information is.");
 
     showTab("analysis");
   } catch (err) {
