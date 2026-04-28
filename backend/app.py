@@ -193,11 +193,10 @@ def analyze():
 
     Returns JSON with the full analysis result.
     """
-    data  = request.get_json(silent=True) or {}
-    title = (data.get("title") or "").strip()
-    print(title)
-    url   = (data.get("url")   or "").strip()
-    text  = (data.get("text")  or "").strip()
+    payload = request.get_json(silent=True)
+    validated, validation_error = validate_analyze_payload(payload)
+    if validation_error:
+        return validation_error
 
     title = validated["title"]
     url = validated["url"]
