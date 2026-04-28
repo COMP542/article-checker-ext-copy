@@ -13,3 +13,6 @@ __pycache__/
 
 # ENV File
 .env
+
+# MacOS
+.DS_Store
