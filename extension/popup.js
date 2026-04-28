@@ -49,20 +49,38 @@ async function extractFromPage(tabId) {
 }
 
 async function postToBackend(payload) {
-  const res = await fetch("http://104.248.67.141:5000/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const urls = [
+    "http://104.248.67.141:5000/analyze",
+    "http://127.0.0.1:5000/analyze",
+  ];
 
-  const json = await res.json();
+  let lastError;
 
-  if (!res.ok) {
-    throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json?.error?.message || `HTTP ${res.status}`);
+      }
+
+      return json;
+
+    } catch (err) {
+      lastError = err;
+      continue;
+    }
   }
 
-  return json;
+  throw new Error(`All backends failed. Last error: ${lastError?.message}`);
 }
+
 
 extractBtn.addEventListener("click", async () => {
   try {
