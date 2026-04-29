@@ -30,91 +30,136 @@ function cloneAndStrip(root) {
     return clone;
 }
 
+function isJunkParagraph(text) {
+    const t = normalizeText(text).toLowerCase();
+    if (!t) return true;
+
+    const junkPatterns = [
+        "continue reading",
+        "more for you",
+        "advertisement",
+        "sign up",
+        "newsletter",
+        "follow us",
+        "all rights reserved"
+    ];
+
+    if (t.length < 40) return true;
+    if (junkPatterns.some(p => t.includes(p))) return true;
+
+    const letters = (t.match(/[a-z]/g) || []).length;
+    if (letters < 20) return true;
+
+    return false;
+}
+
 function getMainTitle() {
     const cleaned = cloneAndStrip(document.documentElement);
-    
-    // Look for article headline in common locations
+
     const headlineSelectors = [
-        "h1",                    // Often the main headline
-        "article h1",           // Article-specific headline
-        "[class*='headline']",  // Classes named headline
-        "[class*='title']",     // Classes named title
-        "main h1",              // Main section headline
+        "h1",
+        "article h1",
+        "[class*='headline']",
+        "[class*='title']",
+        "main h1",
     ];
-    
-    for(const sel of headlineSelectors) {
+
+    for (const sel of headlineSelectors) {
         const el = cleaned.querySelector(sel);
-        if(el) {
-            const text = normalizeText(el.innerText);
-            if(text && text.length > 0 && text.length < 500) {
+        if (el) {
+            const text = normalizeText(el.textContent);
+            if (text && text.length > 0 && text.length < 500) {
                 return text;
             }
         }
     }
-    
-    // Fallback: use document.title but try to clean it
-    // Remove common suffixes like " | Site Name", " - Site Name", etc.
+
     const docTitle = document.title || "";
-    const cleaned_title = normalizeText(docTitle)
-        .split(/\s*[|\-–—]\s*/)[0]  // Take the part before common separators
+    return normalizeText(docTitle)
+        .split(/\s*[|\-–—]\s*/)[0]
         .trim();
-    
-    return cleaned_title;
 }
+
 
 function getMainText() {
     const body = document.body;
-    if(!body) return "";
+    if (!body) return "";
 
     const cleaned = cloneAndStrip(body);
 
-    // best signals first
-    const preferred = cleaned.querySelector("article") || cleaned.querySelector("main");
-    if(preferred) {
-        const text = normalizeText(preferred.innerText);
-        if(wordCount(text) >= 150) return text;
-    }
+    const paragraphSelectors = [
+        "article p",
+        "main p",
+        "[role='main'] p",
+        ".article p",
+        ".story p",
+        ".content p",
+        "p"
+    ];
 
-    // fallback: to pick container with most text
-    const candidates = Array.from(cleaned.querySelectorAll("article, main, section, div"))
-        .filter(el => el.innerText && el.innerText.length > 0);
+    let paragraphs = [];
 
-    let bestText = "";
-    let bestScore = 0;
+    for (const sel of paragraphSelectors) {
+        const found = Array.from(cleaned.querySelectorAll(sel))
+            .map(el => normalizeText(el.textContent))
+            .filter(text => !isJunkParagraph(text));
 
-    for(const el of candidates) {
-        const text = normalizeText(el.innerText);
-        const wc = wordCount(text);
+        if (found.length >= 3) {
+            paragraphs = found;
+            break;
+        }
 
-        const score = wc;
-
-        if(score > bestScore && wc >= 150 && wc <= 8000) {
-            bestScore = score;
-            bestText = text;
+        if (found.length > paragraphs.length) {
+            paragraphs = found;
         }
     }
 
-    if(!bestText) {
-        const text = normalizeText(cleaned.innerText);
-        return text;
+    const text = normalizeText(paragraphs.join(" "));
+    if (wordCount(text) >= 120) return text;
+
+    const candidates = Array.from(cleaned.querySelectorAll("article, main, section, div"));
+    let bestText = "";
+    let bestScore = 0;
+
+    for (const el of candidates) {
+        const ps = Array.from(el.querySelectorAll("p"))
+            .map(p => normalizeText(p.textContent))
+            .filter(text => !isJunkParagraph(text));
+
+        if (!ps.length) continue;
+
+        const combined = normalizeText(ps.join(" "));
+        const wc = wordCount(combined);
+
+        if (wc > bestScore) {
+            bestScore = wc;
+            bestText = combined;
+        }
     }
 
-    return bestText;
+    return bestText || "";
 }
 
-console.log("[TruthChecker] content script ready", location.href);
+console.log("[Parallax] content script ready", location.href);
+console.log("[Parallax] content script ready", location.href);
 
 browser.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "EXTRACT_ARTICLE") {
-    const title = getMainTitle();  // Use the new function instead of document.title
+    const title = getMainTitle();
     const url = location.href;
-    // const text = document.body?.innerText || ""; for the article text
     const text = getMainText();
-    const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-    console.log(title)
+    const wc = text.trim() ? text.trim().split(/\s+/).length : 0;
+
+    console.log("[Parallax] extracted", {
+      title,
+      url,
+      wordCount: wc,
+      preview: text.slice(0, 300)
+    });
+
     return Promise.resolve({
       ok: true,
-      data: { title, url, text, wordCount }
+      data: { title, url, text, wordCount: wc }
     });
   }
 
