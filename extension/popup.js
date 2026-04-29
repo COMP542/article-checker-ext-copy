@@ -1,3 +1,5 @@
+
+
 // extension/popup.js
 
 const extractBtn = document.getElementById("extractBtn");
@@ -33,31 +35,17 @@ tabAnalysis.addEventListener("click", () => showTab("analysis"));
 
 async function getActiveTab() {
   const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-  if (!tabs.length) {
-    throw new Error("No active tab found.");
-  }
   return tabs[0];
 }
 
 async function extractFromPage(tabId) {
-  try {
-    const extractResponse = await browser.tabs.sendMessage(tabId, {
-      type: "EXTRACT_ARTICLE"
-    });
+  const response = await browser.tabs.sendMessage(tabId, { type: "EXTRACT_ARTICLE" });
 
-    if (!extractResponse?.ok) {
-      throw new Error(extractResponse?.error || "Failed to extract article text.");
-    }
-
-    return extractResponse.data;
-  } catch (err) {
-    if (String(err).includes("Receiving end does not exist")) {
-      throw new Error(
-        "Content script is not loaded on this page yet. Refresh the tab and try again."
-      );
-    }
-    throw err;
+  if (!response?.ok) {
+    throw new Error(response?.error || "Failed to extract article text.");
   }
+
+  return response.data;
 }
 
 async function postToBackend(payload) {
@@ -66,102 +54,66 @@ async function postToBackend(payload) {
     "http://127.0.0.1:5000/analyze",
   ];
 
-  let lastError = null;
+  let lastError;
 
   for (const url of urls) {
     try {
-      const apiResponse = await fetch(url, {
+
+      console.log(`Trying backend: ${url}`);
+
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      let result = null;
-      try {
-        result = await apiResponse.json();
-      } catch {
-        result = null;
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json?.error?.message || `HTTP ${res.status}`);
       }
 
-      if (!apiResponse.ok) {
-        throw new Error(result?.error?.message || `HTTP ${apiResponse.status}`);
-      }
+      console.log(`Success with backend: ${url}`, json);
+      return json;
 
-      return result;
     } catch (err) {
       lastError = err;
+      console.error(`Error with backend ${url}:`, err);
+      continue;
     }
   }
 
-  throw new Error(`All backends failed. Last error: ${lastError?.message || "Unknown error"}`);
+  throw new Error(`All backends failed. Last error: ${lastError?.message}`);
 }
 
-function renderArticlePreview({ title, url, text, wordCount }) {
-  previewArticle.textContent =
-    `TITLE:\n${title}\n\nURL:\n${url}\n\nWORDS:\n${wordCount}\n\nTEXT:\n${text}`;
-}
-
-function renderAnalysis(analysis, fallbackWordCount) {
-  previewAnalysis.textContent = JSON.stringify(analysis, null, 2);
-  infoEl.textContent =
-    `Consistency score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? fallbackWordCount}\n` +
-    `Label: ${analysis.label}`;
-}
-
-function validateExtractedArticle({ url, text, wordCount }) {
-  if (!text || wordCount < 120) {
-    const hostname = (() => {
-      try {
-        return new URL(url).hostname;
-      } catch {
-        return "";
-      }
-    })();
-
-    if (hostname.includes("msn.com")) {
-      throw new Error(
-        "This MSN page appears to be a preview or wrapper, not the full article text. Open the original publisher article and try again."
-      );
-    }
-
-    throw new Error(
-      "Could not extract enough article text from this page. This site may be showing a preview, syndicated shell, or blocked article body. Try opening the original publisher link."
-    );
-  }
-}
-
-async function runAnalysis() {
-  setStatus("Capturing article...");
-  infoEl.textContent = "";
-  previewArticle.textContent = "";
-  previewAnalysis.textContent = "";
-
-  const tab = await getActiveTab();
-  const extracted = await extractFromPage(tab.id);
-
-  validateExtractedArticle(extracted);
-  renderArticlePreview(extracted);
-
-  setStatus("Sending to backend...");
-  const analysis = await postToBackend({
-    title: extracted.title,
-    url: extracted.url,
-    text: extracted.text
-  });
-
-  renderAnalysis(analysis, extracted.wordCount);
-
-  setStatus(
-    "Analysis complete. Label and percentage score is not for determining validity, or how true information is."
-  );
-  showTab("analysis");
-}
 
 extractBtn.addEventListener("click", async () => {
   try {
-    await runAnalysis();
+    setStatus("Capturing article...");
+    infoEl.textContent = "";
+    previewArticle.textContent = "";
+    previewAnalysis.textContent = "";
+
+    const tab = await getActiveTab();
+    const extracted = await extractFromPage(tab.id);
+
+    const { title, url, text, wordCount } = extracted;
+
+    previewArticle.textContent =
+      `TITLE:\n${title}\n\nURL:\n${url}\n\nWORDS:\n${wordCount}\n\nTEXT:\n${text}`;
+
+    setStatus("Sending to backend...");
+
+    const analysis = await postToBackend({ title, url, text });
+
+    previewAnalysis.textContent = JSON.stringify(analysis, null, 2);
+
+    infoEl.textContent = `Consistency score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? wordCount}\nLabel: ${analysis.label}`;
+    setStatus("Analysis complete. Label and percentage score is not for determining validity, or how true information is.");
+
+    showTab("analysis");
   } catch (err) {
     setStatus("Error occurred", true);
-    infoEl.textContent = err?.message || String(err);
+    infoEl.textContent = err.message || String(err);
   }
 });
