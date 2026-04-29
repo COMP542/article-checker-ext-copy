@@ -1,4 +1,3 @@
-# backend/requirements.txt
 # Install everything with:
 #   pip install -r requirements.txt
 #
@@ -15,9 +14,10 @@ sentence-transformers  # loads the AI embedding model (all-MiniLM-L6-v2)
                        # converts article text into vectors for comparison
 scikit-learn           # provides cosine_similarity for scoring
 numpy                  # math on vectors and arrays
+matplotlib             # heat map / similarity visualization
 
 textblob       # tone analysis — scores subjectivity and polarity of writing
 spacy          # grammar parser — used to detect passive voice constructions
 
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl		
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 # the specific spaCy language model we need (en_core_web_sm) — install with pip
