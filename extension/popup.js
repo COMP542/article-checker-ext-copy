@@ -80,14 +80,13 @@ extractBtn.addEventListener("click", async () => {
       `TITLE:\n${title}\n\nURL:\n${url}\n\nWORDS:\n${wordCount}\n\nTEXT:\n${text}`;
 
     setStatus("Sending to backend...");
-
+    
     const analysis = await postToBackend({ title, url, text });
-
-    previewAnalysis.textContent = JSON.stringify(analysis, null, 2);
-
-    infoEl.textContent = `Consistency score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? wordCount}\nLabel: ${analysis.label}`;
-    setStatus("Analysis complete. Label and percentage score is not for determining validity, or how true information is.");
-
+    renderAnalysis(analysis, wordCount);
+    infoEl.textContent =
+    `Consistency score: ${analysis.score}% | Words: ${analysis.input?.wordCount ?? wordCount}\n` +
+    `Label: ${analysis.label}`;
+    
     showTab("analysis");
   } catch (err) {
     setStatus("Error occurred", true);
