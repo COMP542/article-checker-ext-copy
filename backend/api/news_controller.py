@@ -1,45 +1,38 @@
-
-# backend/api/news_controller.py
+# ============================================================
+# FILE: backend/api/news_controller.py
+# PURPOSE:
+#   Talks to NewsAPI and returns related articles.
 #
-# This file handles fetching related articles from NewsAPI.
-# It takes the title of the article the user is reading, searches
-# for up to 10 recent articles on the same topic, and returns them
-# with metadata including an ownership label for each source.
-#
-# We use ownership labels instead of left/right political ratings
-# because outlet ownership (corporate, state, independent, etc.)
-# is a structural fact — it describes who controls the outlet and
-# what their incentives might be, without implying a political team.
+# CTRL+F TAGS:
+#   [NEWSAPI_FETCH]
+#   [ARTICLE_LIMIT]
+#   [OWNERSHIP_LABELS]
+#   [SOURCE_CATEGORY]
+#   [UPSTREAM_RESPONSE]
+# ============================================================
 
 import requests
 
-# A lookup table mapping news source names to their ownership type.
-# If a source isn't in this list it gets labeled "unknown."
-# You can keep adding sources here as you encounter them in results.
+# [OWNERSHIP_LABELS]
+# Maps outlet names to simplified ownership categories.
+# This is metadata for user context, not a truth score.
 OWNERSHIP_LABELS = {
-
-    # Wire services — raw newswire, typically the least editorialized.
-    # These report facts with minimal commentary.
     "Reuters": "wire",
     "Associated Press": "wire",
     "AFP": "wire",
 
-    # Corporate — owned by large conglomerates.
-    # Their editorial decisions can reflect the interests of their parent company.
-    "CNN": "corporate",                    # Warner Bros. Discovery
-    "Fox News": "corporate",               # News Corp
-    "MSNBC": "corporate",                  # Comcast / NBCUniversal
-    "NBC News": "corporate",               # Comcast / NBCUniversal
-    "ABC News": "corporate",               # Disney
-    "CBS News": "corporate",               # Paramount Global
-    "The Wall Street Journal": "corporate", # News Corp
-    "New York Post": "corporate",          # News Corp
-    "HuffPost": "corporate",               # BuzzFeed Inc
-    "Business Insider": "corporate",       # Axel Springer
-    "Politico": "corporate",               # Axel Springer
+    "CNN": "corporate",
+    "Fox News": "corporate",
+    "MSNBC": "corporate",
+    "NBC News": "corporate",
+    "ABC News": "corporate",
+    "CBS News": "corporate",
+    "The Wall Street Journal": "corporate",
+    "New York Post": "corporate",
+    "HuffPost": "corporate",
+    "Business Insider": "corporate",
+    "Politico": "corporate",
 
-    # State-funded - funded by a government, fully or partially.
-    # Not inherently biased, but worth knowing.
     "BBC News": "state",
     "NPR": "state",
     "PBS": "state",
@@ -47,13 +40,11 @@ OWNERSHIP_LABELS = {
     "RT": "state",
     "Voice of America": "state",
 
-    # Tabloid - sensationalism and engagement-driven headlines first.
     "Daily Mail": "tabloid",
     "The Sun": "tabloid",
     "New York Daily News": "tabloid",
     "TMZ": "tabloid",
 
-    # Independent - not owned by a major conglomerate or government.
     "The Guardian": "independent",
     "The Intercept": "independent",
     "ProPublica": "independent",
@@ -63,36 +54,55 @@ OWNERSHIP_LABELS = {
 
 
 def get_ownership_label(source_name: str) -> str:
-    """Looks up a source name and returns its ownership category."""
+    """
+    [SOURCE_CATEGORY]
+    Return ownership category for a given outlet name.
+    Defaults to 'unknown' if the source is not in the lookup table.
+    """
     return OWNERSHIP_LABELS.get(source_name, "unknown")
 
 
 def fetch_related_articles(query: str, api_key: str, num: int = 10) -> list:
     """
-    Searches NewsAPI for articles related to the given query string.
-    The query is usually the title of the article the user is reading.
+    [NEWSAPI_FETCH] [ARTICLE_LIMIT]
 
-    Returns a list of dicts, each containing:
-        title, description, url, source name, ownership label, publishedAt
+    Search NewsAPI for related articles.
+
+    Parameters:
+      query:
+        search phrase, usually based on the title
+      api_key:
+        NewsAPI authentication key
+      num:
+        how many articles to request from NewsAPI
+
+    IMPORTANT:
+      This 'num' value is one of the main controls for
+      how many related articles the app gathers.
+
+    Returns:
+      A list of simplified article dictionaries ready for scoring.
     """
     print(f"[DEBUG] fetch_related_articles called with query: '{query}', api_key exists: {bool(api_key)}")
-    
-    # Validate query
+
+    # Reject blank queries early.
     if not query or not query.strip():
         print("[DEBUG] Empty query provided")
         return []
-    
+
     url = "https://newsapi.org/v2/everything"
+
+    # [UPSTREAM_REQUEST_PARAMS]
     params = {
-        "q":        query,
+        "q": query,
         "language": "en",
-        "sortBy":   "relevancy",  # most relevant articles first
-        "pageSize": num,
-        "apiKey":   api_key,
+        "sortBy": "relevancy",
+        "pageSize": num,   # [ARTICLE_LIMIT]
+        "apiKey": api_key,
     }
 
     print(f"[DEBUG] Making NewsAPI request with params: {params}")
-    
+
     try:
         response = requests.get(url, params=params)
         print(f"[DEBUG] NewsAPI response status: {response.status_code}")
@@ -114,16 +124,16 @@ def fetch_related_articles(query: str, api_key: str, num: int = 10) -> list:
 
     result = [
         {
-            "title":       article.get("title"),
+            "title": article.get("title"),
             "description": article.get("description") or "",
-            "url":         article.get("url"),
-            "source":      article["source"]["name"],
-            "ownership":   get_ownership_label(article["source"]["name"]),
+            "url": article.get("url"),
+            "source": article["source"]["name"],
+            "ownership": get_ownership_label(article["source"]["name"]),
             "publishedAt": article.get("publishedAt"),
         }
         for article in articles
-        if article.get("title")  # skip any results with no title
+        if article.get("title")
     ]
-    
+
     print(f"[DEBUG] Returning {len(result)} processed articles")
     return result

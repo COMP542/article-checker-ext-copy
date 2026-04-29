@@ -1,34 +1,24 @@
-
-# backend/model/framing_analysis.py
+# ============================================================
+# FILE: backend/model/framing_analysis.py
+# PURPOSE:
+#   Detect language patterns that may indicate framing.
 #
-# This file detects subtle language patterns in an article that can
-# indicate biased or asymmetric framing - without ever saying anything
-# explicitly false. These are real journalistic techniques used to make
-# one side of a story seem more credible than another.
-#
-# We don't label the article as "biased." We just count the patterns
-# and show the user the numbers so they can decide for themselves.
-#
-# NOTE: Filename is framing_analysis.py (not framing_analysis.py).
-# Make sure your actual file on disk matches this spelling.
+# CTRL+F TAGS:
+#   [HEDGING_DETECTION]
+#   [PASSIVE_VOICE_DETECTION]
+#   [PRECISION_ASYMMETRY]
+#   [FRAMING_WARNING]
+# ============================================================
 
 import re
 import spacy
 
-# spaCy is a natural language processing library that can parse
-# sentence structure - it understands grammar, not just word counts.
-# Run this once in your terminal before using this file:
-#   python -m spacy download en_core_web_sm
+# Load spaCy language model once at startup.
+# This model is used for grammatical parsing.
 nlp = spacy.load("en_core_web_sm")
 
-
-#
-
-# These words cast DOUBT on a statement.
-# Example: "Iran claims the strike killed 10 people"
-# Using "claims" implies we're not sure if it's true.
+# [HEDGING_LEXICON]
 DOUBT_VERBS = {
-    # with and without 's' to catch both "claims" and "claim"
     "claim", "claims",
     "allege", "alleges",
     "insist", "insists",
@@ -40,31 +30,28 @@ DOUBT_VERBS = {
     "according"
 }
 
-# These words assert something is FACTUALLY SETTLED.
-# Example: "Israel confirmed the strike killed 10 people" vs "Iran claims 30 people dead"
-# Using "confirmed" implies it's an established fact, while claims devalues or downplays the opposition.
+# [CERTAINTY_LEXICON]
 CERTAINTY_VERBS = {
     "confirmed", "revealed", "showed", "proved", "found",
     "demonstrated", "established", "verified", "acknowledged", "admitted"
 }
 
-# Vague quantity language — hides how many people were affected
+# [VAGUE_LANGUAGE_PATTERN]
 VAGUE = r"\b(unconfirmed|unknown|unclear|some|several|many|numerous|multiple|various)\b"
 
-# Precise numerical claims about people — gives an exact count
+# [PRECISE_NUMBER_PATTERN]
 PRECISE = r"\b(\d+)\s*(people|civilians|soldiers|killed|dead|wounded|injured|casualties|victims)\b"
 
 
-# --- Detection functions ---
-
 def detect_hedging(text: str) -> dict:
     """
-    Counts how often the article uses doubt language vs certainty language.
+    [HEDGING_DETECTION]
+    Counts doubt language and certainty language.
 
-    If one side of a story gets "claims" and "allegedly" while the other
-    side gets "confirmed" and "revealed", that's selective skepticism —
-    the article is treating one side's statements as uncertain and the
-    other's as fact, which subtly shifts how the reader perceives each side.
+    Idea:
+    If an article repeatedly describes one side with words like
+    'claims' or 'allegedly' while using stronger certainty for another side,
+    that can subtly shape reader perception.
     """
     words = re.findall(r"\b\w+\b", text.lower())
 
@@ -74,12 +61,9 @@ def detect_hedging(text: str) -> dict:
     doubt_count = len(doubt_found)
     certainty_count = len(certainty_found)
 
-
     return {
         "doubt_language_count": doubt_count,
         "certainty_language_count": certainty_count,
-        # Flag if there's a lot of doubt language and zero certainty language
-        # "flag": doubt_count > 3 and certainty_count == 0, // old flag threshold
         "flag": doubt_count > certainty_count and doubt_count > 0,
         "flagged_words": {
             "doubt": list(set(doubt_found)),
@@ -90,20 +74,17 @@ def detect_hedging(text: str) -> dict:
 
 def detect_passive_voice(text: str) -> dict:
     """
-    Uses spaCy's grammar parser to find passive voice constructions.
+    [PASSIVE_VOICE_DETECTION]
+    Uses spaCy dependency parsing to estimate passive voice ratio.
 
-    Passive voice removes the actor from a sentence:
-      "The building was bombed"  →  who bombed it?
-      "Civilians were killed"    →  who killed them?
-
-    A high passive voice ratio can mean the article is systematically
-    avoiding naming who did what — which matters a lot in conflict reporting.
-
-    We cap the text at 3000 characters to keep it fast.
+    Why passive voice matters:
+    It can hide the actor:
+      'The building was hit'
+      instead of
+      'X hit the building'
     """
     doc = nlp(text[:3000])
 
-    # nsubjpass = passive nominal subject (grammar term for passive voice subject)
     passives = sum(1 for token in doc if token.dep_ == "nsubjpass")
     total_verbs = sum(1 for token in doc if token.pos_ == "VERB")
 
@@ -111,23 +92,19 @@ def detect_passive_voice(text: str) -> dict:
 
     return {
         "passive_voice_ratio": ratio,
-        # Flag if more than 30% of verbs are passive
         "flag": ratio > 0.3
     }
 
 
 def detect_precision_asymmetry(text: str) -> dict:
     """
-    Checks if the article mixes vague quantity language with precise numbers.
+    [PRECISION_ASYMMETRY]
+    Looks for both:
+      - vague quantity language
+      - precise numerical claims
 
-    Example of asymmetry:
-      "An unconfirmed number of Iranian soldiers were killed"  ← vague
-      "Exactly 47 Israeli civilians were wounded"              ← precise
-
-    When one side gets exact numbers and the other gets vague language,
-    it creates an implicit imbalance — one side feels more real and documented.
+    If both appear together, that may indicate uneven specificity.
     """
-
     vague_found = re.findall(VAGUE, text.lower())
     precise_found = [" ".join(match) for match in re.findall(PRECISE, text.lower())]
 
@@ -137,7 +114,6 @@ def detect_precision_asymmetry(text: str) -> dict:
     return {
         "vague_quantity_count": vague_count,
         "precise_quantity_count": precise_count,
-        # Flag if both vague AND precise language appear in the same article
         "flag": vague_count > 0 and precise_count > 0,
         "flagged_words": {
             "doubt": list(set(vague_found)),
@@ -148,15 +124,14 @@ def detect_precision_asymmetry(text: str) -> dict:
 
 def analyze_framing(text: str) -> dict:
     """
-    Runs all three framing checks and returns a combined result.
-    This is the function that app.py calls.
+    [FRAMING_WARNING]
+    Runs all framing detectors and combines their flags.
 
-    framing_warning = True means 2 or more checks were flagged,
-    which is a stronger signal that the article may be framing
-    the story in a one-sided way.
+    Final warning rule:
+    if 2 or more checks are flagged, framing_warning = True
     """
-    hedging   = detect_hedging(text)
-    passive   = detect_passive_voice(text)
+    hedging = detect_hedging(text)
+    passive = detect_passive_voice(text)
     precision = detect_precision_asymmetry(text)
 
     flags_triggered = sum([
@@ -166,10 +141,9 @@ def analyze_framing(text: str) -> dict:
     ])
 
     return {
-        "hedging":              hedging,
-        "passive_voice":        passive,
-        "precision_asymmetry":  precision,
-        "flags_triggered":      flags_triggered,
-        # True if 2 or more of the 3 checks were flagged
-        "framing_warning":      flags_triggered >= 2
+        "hedging": hedging,
+        "passive_voice": passive,
+        "precision_asymmetry": precision,
+        "flags_triggered": flags_triggered,
+        "framing_warning": flags_triggered >= 2
     }

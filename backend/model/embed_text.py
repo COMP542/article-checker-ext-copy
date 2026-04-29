@@ -1,35 +1,36 @@
-
-# backend/model/embed_text.py
+# ============================================================
+# FILE: backend/model/embed_text.py
+# PURPOSE:
+#   Convert article text into numeric embeddings for similarity math.
 #
-# This file loads an AI language model and uses it to convert
-# article text into a list of numbers called a "vector" or "embedding".
-#
-# Why? Because computers can't directly compare two pieces of text -
-# but they CAN compare numbers. Articles about the same topic end up
-# with similar numbers, so we can measure how "close" or "far apart"
-# two articles are just by doing math on their vectors.
-#
-# The model (all-MiniLM-L6-v2) was pre-trained by Hugging Face on a
-# huge amount of text. We don't train it ourselves - we just use it
-# as a feature extractor. It auto-downloads (~80MB) on first run
-# and is cached locally after that.
+# CTRL+F TAGS:
+#   [EMBED_MODEL]
+#   [VECTOR_DIMENSIONS]
+#   [EMBED_BATCH]
+# ============================================================
 
 from sentence_transformers import SentenceTransformer
 
-# Load the model once when the server starts.
-# Each piece of text becomes a vector of 384 numbers.
+# [EMBED_MODEL]
+# Load once at startup so repeated requests are faster.
+# all-MiniLM-L6-v2 outputs embeddings with 384 dimensions.
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 def embed_texts(texts: list):
     """
-    Takes a list of strings and returns a 2D numpy array
-    where each row is the vector for one article.
+    [EMBED_BATCH] [VECTOR_DIMENSIONS]
 
-    Shape: (number_of_articles, 384)
+    Encode a list of text strings into a 2D numpy array.
 
-    Articles about similar topics will have vectors that are
-    mathematically close to each other - that closeness is
-    what we measure to compute the consistency score.
+    Input:
+      ["article text 1", "article text 2", ...]
+
+    Output shape:
+      (number_of_texts, 384)
+
+    Why this matters:
+    Similar articles will produce embeddings that are closer together
+    in vector space, which lets us compare them numerically.
     """
     return model.encode(texts, convert_to_numpy=True)
