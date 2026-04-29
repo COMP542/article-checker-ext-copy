@@ -1,0 +1,35 @@
+# Fast Ctrl+F cheat sheet
+
+
+# Percentage score logic
+
+[PERCENTAGE_SCORE]
+[CONSISTENCY_LABEL]
+[DISPLAY_SCORE]
+
+
+# How many articles it gathers
+
+[RELATED_ARTICLES_LIMIT]
+[ARTICLE_LIMIT]
+
+
+# Input checks
+
+[INPUT_VALIDATION]
+[MIN_WORD_REQUIREMENT]
+[MAX_TEXT_LIMIT]
+
+
+# Framing detection
+
+[HEDGING_DETECTION]
+[PASSIVE_VOICE_DETECTION]
+[PRECISION_ASYMMETRY]
+
+
+# Extraction
+
+[TITLE_EXTRACTION]
+[MAIN_TEXT_EXTRACTION]
+[NOISE_REMOVAL]
