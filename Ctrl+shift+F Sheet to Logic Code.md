@@ -1,4 +1,4 @@
-# Fast Ctrl+F cheat sheet
+# Fast Ctrl+shift+F cheat sheet
 
 
 # Percentage score logic
