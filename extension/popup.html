@@ -3,71 +3,111 @@
   <head>
     <meta charset="utf-8" />
     <style>
-      body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-        margin: 12px;
-        width: 360px;
-      }
+        body {
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+          margin: 0;
+          padding: 16px;
+          width: 360px;
+          background: #f5f7fb;
+          color: #1a1a1a;
+        }
 
-      button {
-        width: 100%;
-        padding: 10px;
-        font-size: 14px;
-      }
+        /* Primary button */
+        button#extractBtn {
+          width: 100%;
+          padding: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          background: linear-gradient(135deg, #4f8cff, #6a5cff);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
 
-      .meta {
-        margin-top: 10px;
-        font-size: 12px;
-        opacity: 0.85;
-        white-space: pre-wrap;
-      }
+        button#extractBtn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
 
-      .tabs {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-      }
+        button#extractBtn:active {
+          transform: scale(0.98);
+        }
 
-      .tab-btn {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background: #f7f7f7;
-        cursor: pointer;
-      }
+        /* Meta text */
+        .meta {
+          margin-top: 10px;
+          font-size: 12px;
+          color: #555;
+          white-space: pre-wrap;
+        }
 
-      .tab-btn.active {
-        font-weight: 600;
-        background: #eaeaea;
-      }
+        /* Tabs container */
+        .tabs {
+          display: flex;
+          margin-top: 16px;
+          background: #e9ecf3;
+          padding: 4px;
+          border-radius: 10px;
+        }
 
-      .panel {
-        display: none;
-      }
+        /* Tab buttons */
+        .tab-btn {
+          flex: 1;
+          padding: 8px;
+          border: none;
+          border-radius: 8px;
+          background: transparent;
+          cursor: pointer;
+          font-size: 13px;
+          transition: all 0.2s ease;
+        }
 
-      .panel.active {
-        display: block;
-      }
+        .tab-btn:hover {
+          background: rgba(0,0,0,0.05);
+        }
 
-      .box {
-        margin-top: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        max-height: 260px;
-        overflow: auto;
-        white-space: pre-wrap;
-      }
+        .tab-btn.active {
+          background: white;
+          font-weight: 600;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
 
-      .json-box {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 12px;
-      }
+        /* Panels */
+        .panel {
+          display: none;
+        }
 
-      .error {
-        color: #b00020;
-      }
+        .panel.active {
+          display: block;
+        }
+
+        /* Content box */
+        .box {
+          margin-top: 12px;
+          padding: 12px;
+          border-radius: 10px;
+          background: white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          max-height: 260px;
+          overflow: auto;
+          white-space: pre-wrap;
+        }
+
+        /* JSON style */
+        .json-box {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 12px;
+          background: #0f172a;
+          color: #e2e8f0;
+        }
+
+        /* Error */
+        .error {
+          color: #d32f2f;
+          font-weight: 500;
+        }
     </style>
   </head>
   <body>
