@@ -37,10 +37,58 @@ CERTAINTY_VERBS = {
 }
 
 # [VAGUE_LANGUAGE_PATTERN]
-VAGUE = r"\b(unconfirmed|unknown|unclear|some|several|many|numerous|multiple|various)\b"
+VAGUE_TERMS = [
+    "unconfirmed",
+    "unknown",
+    "unclear",
+    "undisclosed",
+    "unspecified",
+    "some",
+    "several",
+    "many",
+    "numerous",
+    "multiple",
+    "various",
+    "few",
+    "a few",
+    "handful",
+    "a handful of",
+    "dozens",
+    "dozens of",
+    "scores",
+    "scores of",
+    "countless",
+    "a number of",
+    "an unknown number of",
+    "an unclear number of",
+]
+
+VAGUE = r"\b(?:%s)\b" % "|".join(re.escape(term) for term in VAGUE_TERMS)
 
 # [PRECISE_NUMBER_PATTERN]
-PRECISE = r"\b(\d+)\s*(people|civilians|soldiers|killed|dead|wounded|injured|casualties|victims)\b"
+PEOPLE_TERMS = [
+    "people", "person", "civilians", "civilian", "soldiers", "soldier",
+    "children", "child", "women", "woman", "men", "man", "families", "family",
+    "residents", "students", "student", "teachers", "teacher",
+    "journalists", "journalist", "patients", "patient", "workers", "worker",
+    "hostages", "hostage", "refugees", "refugee", "officials", "official",
+    "protesters", "protester", "police", "officers", "troops",
+    "militants", "fighters", "suspects", "victims"
+]
+
+HARM_TERMS = [
+    "casualties", "deaths", "dead", "killed", "wounded", "injured",
+    "missing", "displaced", "detained", "arrested", "captured"
+]
+
+STRUCTURE_TERMS = [
+    "homes", "houses", "buildings", "schools", "hospitals", "clinics",
+    "mosques", "churches", "vehicles", "cars", "tanks",
+    "missiles", "rockets", "drones", "sites", "facilities"
+]
+
+PRECISE_TERMS = PEOPLE_TERMS + HARM_TERMS + STRUCTURE_TERMS
+PRECISE = r"\b(\d+)\s*(%s)\b" % "|".join(PRECISE_TERMS)
 
 
 def detect_hedging(text: str) -> dict:
